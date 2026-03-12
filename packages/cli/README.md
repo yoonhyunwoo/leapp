@@ -32,6 +32,13 @@ USAGE
 ...
 ```
 <!-- usagestop -->
+
+# Session auth
+
+For `awsIamRoleChained` sessions whose parent session is `awsIamUser`, `leapp session start SESSIONNAME --local-auth` reads the MFA code from the terminal while keeping the existing desktop-backed secret lookup and session refresh flow.
+
+`--local-auth` is supported only for chained sessions with an IAM User parent and only when the workspace uses the credential file method.
+
 # Commands
 <!-- commands -->
 # Command Topics

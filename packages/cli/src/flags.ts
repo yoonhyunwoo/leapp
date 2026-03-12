@@ -68,6 +68,12 @@ export const noInteractive = Flags.boolean({
   hidden: false,
 });
 
+export const localAuth = Flags.boolean({
+  description: "Use terminal MFA input for supported AWS IAM Role Chained sessions",
+  hidden: false,
+  default: false,
+});
+
 export const sessionName = Flags.string({
   description: "Session Alias to identify the session in Leapp",
   hidden: false,

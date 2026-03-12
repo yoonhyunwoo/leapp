@@ -192,6 +192,13 @@ describe("AwsIamRoleChainedService", () => {
     expect(awsIamRoleChainedService.generateCredentials).toHaveBeenCalledWith("fake-session-id");
   });
 
+  test("generateCredentialsProxy - forwards local auth options", async () => {
+    const awsIamRoleChainedService = new AwsIamRoleChainedService(null, null, null, null, null, null);
+    jest.spyOn(awsIamRoleChainedService, "generateCredentials").mockImplementation(jest.fn());
+    await awsIamRoleChainedService.generateCredentialsProxy("fake-session-id", { localAuth: true });
+    expect(awsIamRoleChainedService.generateCredentials).toHaveBeenCalledWith("fake-session-id", { localAuth: true });
+  });
+
   test("generateCredentials - generate a credential set", async () => {
     const awsIamRoleChainedService = new AwsIamRoleChainedService(
       sessionNotifier,
@@ -209,6 +216,40 @@ describe("AwsIamRoleChainedService", () => {
     expect(repository.getSessionById).toHaveBeenCalledWith("sessionP");
 
     expect(generateSessionToken).toHaveBeenCalled();
+  });
+
+  test("generateCredentials - local auth forwards to IAM user parent", async () => {
+    parentSession.type = SessionType.awsIamUser;
+    const awsIamRoleChainedService = new AwsIamRoleChainedService(
+      sessionNotifier,
+      repository,
+      awsCoreService,
+      fileService,
+      null,
+      parentSessionServiceFactory
+    );
+    (awsIamRoleChainedService as any).generateSessionToken = generateSessionToken;
+
+    await awsIamRoleChainedService.generateCredentials(session.sessionId, { localAuth: true });
+
+    expect(parentSessionService.generateCredentialsProxy).toHaveBeenCalledWith("sessionP", { localAuth: true });
+    expect(generateSessionToken).toHaveBeenCalled();
+  });
+
+  test("generateCredentials - local auth fails for non IAM user parent", async () => {
+    const awsIamRoleChainedService = new AwsIamRoleChainedService(
+      sessionNotifier,
+      repository,
+      awsCoreService,
+      fileService,
+      null,
+      parentSessionServiceFactory
+    );
+
+    await expect(awsIamRoleChainedService.generateCredentials(session.sessionId, { localAuth: true })).rejects.toThrow(
+      "Local auth is supported only for chained sessions with an IAM User parent"
+    );
+    expect(parentSessionService.generateCredentialsProxy).not.toHaveBeenCalled();
   });
 
   test("generateCredentials - RoleSessionName undefined", async () => {

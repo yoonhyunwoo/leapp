@@ -16,6 +16,7 @@ import { IKeychainService } from "../../../interfaces/i-keychain-service";
 import { LoggedException, LogLevel } from "../../log-service";
 import { CreateSessionRequest } from "../create-session-request";
 import { GetRoleCredentialsResponse } from "@aws-sdk/client-sso";
+import { SessionStartOptions } from "../session-service";
 
 export interface GenerateSSOTokenResponse {
   accessToken: string;
@@ -138,11 +139,11 @@ export class AwsSsoRoleService extends AwsSessionService implements BrowserWindo
     await this.fileService.replaceWriteSync(this.awsCoreService.awsCredentialPath(), credentialsFile);
   }
 
-  generateCredentialsProxy(sessionId: string): Promise<CredentialsInfo> {
+  generateCredentialsProxy(sessionId: string, _options?: SessionStartOptions): Promise<CredentialsInfo> {
     return this.generateCredentials(sessionId);
   }
 
-  async generateCredentials(sessionId: string): Promise<CredentialsInfo> {
+  async generateCredentials(sessionId: string, _options?: SessionStartOptions): Promise<CredentialsInfo> {
     const session: AwsSsoRoleSession = this.repository.getSessionById(sessionId) as AwsSsoRoleSession;
     const awsSsoConfiguration = this.repository.getAwsSsoIntegration(session.awsSsoConfigurationId);
     const region = awsSsoConfiguration.region;

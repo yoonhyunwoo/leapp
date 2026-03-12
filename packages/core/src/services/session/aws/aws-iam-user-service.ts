@@ -13,6 +13,7 @@ import { AwsIamUserSessionRequest } from "./aws-iam-user-session-request";
 import { AwsSessionService } from "./aws-session-service";
 import { LoggedException, LogLevel } from "../../log-service";
 import { IKeychainService } from "../../../interfaces/i-keychain-service";
+import { SessionStartOptions } from "../session-service";
 
 export interface GenerateSessionTokenCallingMfaParams {
   // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -128,22 +129,16 @@ export class AwsIamUserService extends AwsSessionService {
     return await this.fileService.replaceWriteSync(this.awsCoreService.awsCredentialPath(), credentialsFile);
   }
 
-  generateCredentialsProxy(sessionId: string): Promise<CredentialsInfo> {
-    return new Promise<CredentialsInfo>((resolve, reject) => {
-      this.mfaCodePrompterProxy = this.remoteMfaCodePrompter;
-      this.generateCredentials(sessionId)
-        .then((credentialsInfo: CredentialsInfo) => {
-          this.mfaCodePrompterProxy = this.localMfaCodePrompter;
-          resolve(credentialsInfo);
-        })
-        .catch((err) => {
-          this.mfaCodePrompterProxy = this.localMfaCodePrompter;
-          reject(err);
-        });
-    });
+  async generateCredentialsProxy(sessionId: string, options?: SessionStartOptions): Promise<CredentialsInfo> {
+    try {
+      this.mfaCodePrompterProxy = options?.localAuth ? this.localMfaCodePrompter : this.remoteMfaCodePrompter;
+      return options ? await this.generateCredentials(sessionId, options) : await this.generateCredentials(sessionId);
+    } finally {
+      this.mfaCodePrompterProxy = this.localMfaCodePrompter;
+    }
   }
 
-  async generateCredentials(sessionId: string): Promise<CredentialsInfo> {
+  async generateCredentials(sessionId: string, _options?: SessionStartOptions): Promise<CredentialsInfo> {
     // Get the session in question
     //const session = this.behaviouralSubjectService.get(sessionId);
     const session = this.repository.getSessions().find((sess) => sess.sessionId === sessionId);

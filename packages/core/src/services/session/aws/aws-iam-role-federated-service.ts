@@ -11,6 +11,7 @@ import { SessionType } from "../../../models/session-type";
 import { Session } from "../../../models/session";
 import { LoggedException, LogLevel } from "../../log-service";
 import { AssumeRoleWithSAMLCommand, AssumeRoleWithSAMLResponse, Credentials, STSClient } from "@aws-sdk/client-sts";
+import { SessionStartOptions } from "../session-service";
 
 export class AwsIamRoleFederatedService extends AwsSessionService {
   constructor(
@@ -90,11 +91,11 @@ export class AwsIamRoleFederatedService extends AwsSessionService {
     return await this.fileService.replaceWriteSync(this.awsCoreService.awsCredentialPath(), credentialsFile);
   }
 
-  generateCredentialsProxy(sessionId: string): Promise<CredentialsInfo> {
+  generateCredentialsProxy(sessionId: string, _options?: SessionStartOptions): Promise<CredentialsInfo> {
     return this.generateCredentials(sessionId);
   }
 
-  async generateCredentials(sessionId: string): Promise<CredentialsInfo> {
+  async generateCredentials(sessionId: string, _options?: SessionStartOptions): Promise<CredentialsInfo> {
     // Get the session in question
     const session = this.repository.getSessionById(sessionId);
 

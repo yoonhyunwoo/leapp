@@ -117,6 +117,44 @@ describe("AwsSessionService", () => {
     expect(await awsSessionService.applyConfigProfileCommand).toHaveBeenCalledWith("fake-session-id");
   });
 
+  test("start - local auth passes options to credential generation", async () => {
+    const repository = {
+      getWorkspace: jest.fn(() => ({ credentialMethod: constants.credentialFile })),
+    } as any;
+    const sessionNotifier = {} as any;
+    const credentialsInfo = {} as any;
+    const awsSessionService = new (AwsSessionService as any)(sessionNotifier, repository);
+    awsSessionService.isThereAnotherPendingSessionWithSameNamedProfile = jest.fn(() => false);
+    awsSessionService.stopAllWithSameNameProfile = jest.fn(async () => {});
+    awsSessionService.sessionLoading = jest.fn();
+    awsSessionService.sessionActivated = jest.fn();
+    awsSessionService.generateCredentials = jest.fn(async () => credentialsInfo);
+    awsSessionService.applyCredentials = jest.fn(async () => {});
+
+    await awsSessionService.start("fake-session-id", { localAuth: true });
+
+    expect(awsSessionService.generateCredentials).toHaveBeenCalledWith("fake-session-id", { localAuth: true });
+    expect(awsSessionService.applyCredentials).toHaveBeenCalledWith("fake-session-id", credentialsInfo);
+  });
+
+  test("start - local auth fails in credentialProcess mode", async () => {
+    const repository = {
+      getWorkspace: () => ({ credentialMethod: constants.credentialProcess }),
+    } as any;
+    const awsSessionService: any = new (AwsSessionService as any)(null, repository);
+    awsSessionService.isThereAnotherPendingSessionWithSameNamedProfile = jest.fn(() => false);
+    awsSessionService.stopAllWithSameNameProfile = jest.fn(async () => {});
+    awsSessionService.sessionError = jest.fn();
+    awsSessionService.applyConfigProfileCommand = jest.fn(async () => {});
+
+    await awsSessionService.start("fake-session-id", { localAuth: true });
+
+    expect(awsSessionService.applyConfigProfileCommand).not.toHaveBeenCalled();
+    expect(awsSessionService.sessionError).toHaveBeenCalled();
+    expect(awsSessionService.sessionError.mock.calls[0][0]).toBe("fake-session-id");
+    expect(awsSessionService.sessionError.mock.calls[0][1].message).toBe("Local auth is supported only with credential file workspaces");
+  });
+
   test("rotate - apply rotation by generating a new set of credentials", async () => {
     const repository = {
       listIamRoleChained: jest.fn(() => ["session1", "session2"]),

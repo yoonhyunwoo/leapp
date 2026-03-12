@@ -4,6 +4,10 @@ import { Repository } from "../repository";
 import { IBehaviouralNotifier } from "../../interfaces/i-behavioural-notifier";
 import { CreateSessionRequest } from "./create-session-request";
 
+export interface SessionStartOptions {
+  localAuth?: boolean;
+}
+
 export abstract class SessionService {
   protected constructor(protected sessionNotifier: IBehaviouralNotifier, protected repository: Repository) {}
 
@@ -72,7 +76,7 @@ export abstract class SessionService {
 
   abstract update(sessionId: string, updateRequest: CreateSessionRequest): Promise<void>;
 
-  abstract start(sessionId: string): Promise<void>;
+  abstract start(sessionId: string, options?: SessionStartOptions): Promise<void>;
 
   abstract rotate(sessionId: string): Promise<void>;
 

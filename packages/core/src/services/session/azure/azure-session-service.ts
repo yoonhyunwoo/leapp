@@ -14,6 +14,7 @@ import { SessionStatus } from "../../../models/session-status";
 import { constants } from "../../../models/constants";
 import { SessionType } from "../../../models/session-type";
 import { CreateSessionRequest } from "../create-session-request";
+import { SessionStartOptions } from "../session-service";
 
 // TODO: refactor by calling AzureIntegrationService instead of Repository
 export class AzureSessionService extends SessionService {
@@ -46,7 +47,7 @@ export class AzureSessionService extends SessionService {
     this.sessionNotifier.setSessions(this.repository.getSessions());
   }
 
-  async start(sessionId: string): Promise<void> {
+  async start(sessionId: string, _options?: SessionStartOptions): Promise<void> {
     const session = this.repository.getSessionById(sessionId) as AzureSession;
     await this.stopAllOtherSessions(sessionId);
     this.sessionLoading(sessionId);

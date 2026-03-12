@@ -333,6 +333,32 @@ describe("AwsIamUserService", () => {
         await expect(service.generateCredentialsProxy(mockedSessionId)).resolves.toBe(mockedCredentialsInfo);
         expect((service as any).mfaCodePrompterProxy).toEqual(localMfaCodePrompter);
       });
+
+      test("that generateCredentialsProxy keeps the local prompt when local auth is requested", async () => {
+        const mockedCredentialsInfo: any = {
+          sessionToken: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            aws_access_key_id: "mocked-access-key-id",
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            aws_secret_access_key: "mocked-secret-access-key",
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            aws_session_token: "mocked-session-token",
+          },
+        };
+        const localMfaCodePrompter: any = { prompt: "local" };
+        const remoteMfaCodePrompter: any = { prompt: "remote" };
+
+        const service = new AwsIamUserService(null, null, localMfaCodePrompter, remoteMfaCodePrompter, null, null, null);
+        (service as any).generateCredentials = jest.fn(async (_sessionId, options) => {
+          expect((service as any).mfaCodePrompterProxy).toEqual(localMfaCodePrompter);
+          expect(options).toEqual({ localAuth: true });
+          return mockedCredentialsInfo;
+        });
+
+        await expect(service.generateCredentialsProxy(mockedSessionId, { localAuth: true })).resolves.toBe(mockedCredentialsInfo);
+        expect((service as any).generateCredentials).toHaveBeenCalledWith(mockedSessionId, { localAuth: true });
+        expect((service as any).mfaCodePrompterProxy).toEqual(localMfaCodePrompter);
+      });
     });
 
     describe("if generateCredentials rejects", () => {

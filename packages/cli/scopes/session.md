@@ -292,12 +292,13 @@ Start a session
 
 ```
 USAGE
-  $ leapp session start [SESSIONNAME] [--sessionId <value>] [--sessionRole <value>] [--noInteractive]
+  $ leapp session start [SESSIONNAME] [--sessionId <value>] [--sessionRole <value>] [--noInteractive] [--local-auth]
 
 ARGUMENTS
   SESSIONNAME  Name of the Leapp session
 
 FLAGS
+  --local-auth          Use terminal MFA input for supported AWS IAM Role Chained sessions
   --noInteractive        If the specified session is not unique or doesn't exist, throw an error without starting the
                          interactive session selection mode
   --sessionId=<value>    Session Id to identify the session in Leapp, recover it with $leapp session list -x
@@ -305,6 +306,8 @@ FLAGS
 
 DESCRIPTION
   Start a session
+  The --local-auth flag is supported only for awsIamRoleChained sessions whose parent session is awsIamUser and only
+  when the workspace uses the credential file method.
 
 EXAMPLES
   $leapp session start
@@ -314,6 +317,8 @@ EXAMPLES
   $leapp session start SESSIONNAME --sessionRole SESSIONROLE
 
   $leapp session start SESSIONNAME --noInteractive
+
+  $leapp session start SESSIONNAME --local-auth
 
   $leapp session start --sessionId SESSIONID
 ```

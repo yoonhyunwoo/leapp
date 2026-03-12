@@ -2,7 +2,7 @@ import { LeappCommand } from "../../leapp-command";
 import { Config } from "@oclif/core/lib/config/config";
 import { Session } from "@noovolari/leapp-core/models/session";
 import { SessionStatus } from "@noovolari/leapp-core/models/session-status";
-import { sessionRole, sessionId, noInteractive } from "../../flags";
+import { sessionRole, sessionId, noInteractive, localAuth } from "../../flags";
 import { SessionType } from "@noovolari/leapp-core/models/session-type";
 import { AwsIamRoleFederatedSession } from "@noovolari/leapp-core/models/aws/aws-iam-role-federated-session";
 import { AwsIamRoleChainedSession } from "@noovolari/leapp-core/models/aws/aws-iam-role-chained-session";
@@ -18,6 +18,7 @@ export default class StartSession extends LeappCommand {
     `$leapp session start SESSIONNAME`,
     `$leapp session start SESSIONNAME --sessionRole SESSIONROLE`,
     `$leapp session start SESSIONNAME --noInteractive`,
+    `$leapp session start SESSIONNAME --local-auth`,
     `$leapp session start --sessionId SESSIONID`,
   ];
 
@@ -25,6 +26,7 @@ export default class StartSession extends LeappCommand {
     sessionId,
     sessionRole,
     noInteractive,
+    localAuth,
   };
 
   static args = {
@@ -56,19 +58,22 @@ export default class StartSession extends LeappCommand {
       if (!selectedSessions || selectedSessions.length === 0 || (selectedSessions.length > 1 && flags.noInteractive)) {
         throw new Error("No sessions found");
       } else if (selectedSessions.length === 1) {
-        await this.startSession(selectedSessions[0]);
+        await this.startSession(selectedSessions[0], flags.localAuth ? { localAuth: true } : undefined);
       } else {
         const selectedSession = await this.selectSession(selectedSessions);
-        await this.startSession(selectedSession);
+        await this.startSession(selectedSession, flags.localAuth ? { localAuth: true } : undefined);
       }
     } catch (error) {
       this.error(error instanceof Error ? error.message : `Unknown error: ${error}`);
     }
   }
 
-  async startSession(session: Session): Promise<void> {
+  async startSession(session: Session, startOptions?: { localAuth?: boolean }): Promise<void> {
     if (session.status === SessionStatus.active) {
       throw new Error("session already started");
+    }
+    if (startOptions?.localAuth && session.type !== SessionType.awsIamRoleChained) {
+      throw new Error("Local auth is supported only for AWS IAM Role Chained sessions");
     }
     const sessionService = this.cliProviderService.sessionFactory.getSessionService(session.type);
     process.on("SIGINT", () => {
@@ -76,7 +81,11 @@ export default class StartSession extends LeappCommand {
       process.exit(0);
     });
     try {
-      await sessionService.start(session.sessionId);
+      if (startOptions) {
+        await sessionService.start(session.sessionId, startOptions);
+      } else {
+        await sessionService.start(session.sessionId);
+      }
       this.log(`session ${session.sessionName} started`);
     } finally {
       await this.cliProviderService.remoteProceduresClient.refreshSessions();

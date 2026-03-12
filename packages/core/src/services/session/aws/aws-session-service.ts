@@ -7,7 +7,7 @@ import { SessionStatus } from "../../../models/session-status";
 import { SessionType } from "../../../models/session-type";
 import { LogLevel } from "../../log-service";
 import { Repository } from "../../repository";
-import { SessionService } from "../session-service";
+import { SessionService, SessionStartOptions } from "../session-service";
 import { constants } from "../../../models/constants";
 import { AwsCoreService } from "../../aws-core-service";
 import { FileService } from "../../file-service";
@@ -27,15 +27,24 @@ export abstract class AwsSessionService extends SessionService {
     return this.repository.listIamRoleChained(this.repository.getSessionById(sessionId));
   }
 
-  async start(sessionId: string): Promise<void> {
+  async start(sessionId: string, options?: SessionStartOptions): Promise<void> {
     try {
       if (this.isThereAnotherPendingSessionWithSameNamedProfile(sessionId)) {
         throw new LeappBaseError("Pending session with same named profile", this, LogLevel.info, "Pending session with same named profile");
       }
+      const credentialMethod = this.repository.getWorkspace().credentialMethod;
+      if (options?.localAuth && credentialMethod !== constants.credentialFile) {
+        throw new LeappBaseError(
+          "Local auth is supported only with credential file workspaces",
+          this,
+          LogLevel.info,
+          "Local auth is supported only with credential file workspaces"
+        );
+      }
       await this.stopAllWithSameNameProfile(sessionId);
       this.sessionLoading(sessionId);
-      if (this.repository.getWorkspace().credentialMethod === constants.credentialFile) {
-        const credentialsInfo = await this.generateCredentials(sessionId);
+      if (credentialMethod === constants.credentialFile) {
+        const credentialsInfo = options ? await this.generateCredentials(sessionId, options) : await this.generateCredentials(sessionId);
         await this.applyCredentials(sessionId, credentialsInfo);
       } else {
         await this.applyConfigProfileCommand(sessionId);
@@ -170,9 +179,9 @@ export abstract class AwsSessionService extends SessionService {
 
   abstract getAccountNumberFromCallerIdentity(session: Session): Promise<string>;
 
-  abstract generateCredentialsProxy(sessionId: string): Promise<CredentialsInfo>;
+  abstract generateCredentialsProxy(sessionId: string, options?: SessionStartOptions): Promise<CredentialsInfo>;
 
-  abstract generateCredentials(sessionId: string): Promise<CredentialsInfo>;
+  abstract generateCredentials(sessionId: string, options?: SessionStartOptions): Promise<CredentialsInfo>;
 
   abstract applyCredentials(sessionId: string, credentialsInfo: CredentialsInfo): Promise<void>;
 

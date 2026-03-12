@@ -13,6 +13,7 @@ import { LocalstackSession } from "../../../models/localstack/localstack-session
 import { LocalstackSessionRequest } from "./localstack-session-request";
 import { Session } from "../../../models/session";
 import { AwsProcessCredentials } from "../../../models/aws/aws-process-credential";
+import { SessionStartOptions } from "../session-service";
 
 export class LocalstackSessionService extends SessionService {
   /* This service manage the session manipulation as we need top generate credentials and maintain them for a specific duration */
@@ -46,7 +47,7 @@ export class LocalstackSessionService extends SessionService {
     }
   }
 
-  async start(sessionId: string): Promise<void> {
+  async start(sessionId: string, _options?: SessionStartOptions): Promise<void> {
     try {
       if (this.isThereAnotherPendingSessionWithSameNamedProfile(sessionId)) {
         throw new LeappBaseError("Pending session with same named profile", this, LogLevel.info, "Pending session with same named profile");

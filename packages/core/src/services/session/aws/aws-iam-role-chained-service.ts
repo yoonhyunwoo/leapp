@@ -14,6 +14,7 @@ import { AwsParentSessionFactory } from "./aws-parent-session.factory";
 import { AwsSessionService } from "./aws-session-service";
 import { SessionType } from "../../../models/session-type";
 import { constants } from "../../../models/constants";
+import { SessionStartOptions } from "../session-service";
 
 export class AwsIamRoleChainedService extends AwsSessionService {
   constructor(
@@ -99,11 +100,11 @@ export class AwsIamRoleChainedService extends AwsSessionService {
     return await this.fileService.replaceWriteSync(this.awsCoreService.awsCredentialPath(), credentialsFile);
   }
 
-  generateCredentialsProxy(sessionId: string): Promise<CredentialsInfo> {
-    return this.generateCredentials(sessionId);
+  generateCredentialsProxy(sessionId: string, options?: SessionStartOptions): Promise<CredentialsInfo> {
+    return options ? this.generateCredentials(sessionId, options) : this.generateCredentials(sessionId);
   }
 
-  async generateCredentials(sessionId: string): Promise<CredentialsInfo> {
+  async generateCredentials(sessionId: string, options?: SessionStartOptions): Promise<CredentialsInfo> {
     // Retrieve Session
     const session = this.repository.getSessionById(sessionId);
 
@@ -115,9 +116,15 @@ export class AwsIamRoleChainedService extends AwsSessionService {
       throw new LeappNotFoundError(this, `Parent Account Session  not found for Chained Account ${session.sessionName}`);
     }
 
+    if (options?.localAuth && parentSession.type !== SessionType.awsIamUser) {
+      throw new Error("Local auth is supported only for chained sessions with an IAM User parent");
+    }
+
     // Generate a credential set from Parent Session
     const parentSessionService = this.parentSessionServiceFactory.getSessionService(parentSession.type);
-    const parentCredentialsInfo = await parentSessionService.generateCredentialsProxy(parentSession.sessionId);
+    const parentCredentialsInfo = options
+      ? await parentSessionService.generateCredentialsProxy(parentSession.sessionId, options)
+      : await parentSessionService.generateCredentialsProxy(parentSession.sessionId);
 
     const parentCredentials = {
       ["sessionToken"]: parentCredentialsInfo.sessionToken.aws_session_token,
