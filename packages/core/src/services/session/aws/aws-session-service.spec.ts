@@ -57,6 +57,7 @@ describe("AwsSessionService", () => {
       listIamRoleChained: jest.fn(() => ["session1", "session2"]),
       getSessionById: jest.fn(() => "session1"),
       getSessions: jest.fn(() => []),
+      getWorkspace: jest.fn(() => ({ credentialMethod: constants.credentialFile })),
     } as any;
     const sessionNotifier = {} as any;
     const error = new Error("testError");
