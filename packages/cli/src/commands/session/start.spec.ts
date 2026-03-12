@@ -277,7 +277,7 @@ describe("StartSession", () => {
       expect(selectSession).toHaveBeenCalledWith(expected.selectedSessions);
     }
     if (expected.selectedSession) {
-      expect(command.startSession).toHaveBeenCalledWith(expected.selectedSession);
+      expect(command.startSession).toHaveBeenCalledWith(expected.selectedSession, undefined);
     } else {
       expect(command.error).toHaveBeenCalledWith("No sessions found");
     }
@@ -510,7 +510,7 @@ describe("StartSession", () => {
 
     try {
       await command.run();
-      expect(command.startSession).toHaveBeenCalledWith("session");
+      expect(command.startSession).toHaveBeenCalledWith("session", undefined);
     } catch (error) {
       expect(error).toEqual(new Error(expectedErrorMessage));
     }

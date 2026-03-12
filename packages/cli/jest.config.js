@@ -1,6 +1,13 @@
+const preset = require("../../jest.preset.js");
+
 module.exports = {
-  preset: "../../jest.preset.js",
+  ...preset,
   testTimeout: 10000,
+  moduleNameMapper: {
+    ...preset.moduleNameMapper,
+    "^inquirer$": "<rootDir>/test/inquirer-jest-mock.js",
+    "^\\./team-service$": "<rootDir>/src/service/team-service-stub.ts",
+  },
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/**/cli-native-service.ts",
